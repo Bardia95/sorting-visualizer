@@ -1,0 +1,10 @@
+{:source-paths ["src"]
+ :dependencies [[reagent "0.10.0"]]
+ :dev-http {8080 "public/"}
+ :nrepl {:init-ns sorting-visualizer.core}
+ :builds {:app {:target :browser
+                :output-dir "public/assets/app/js"
+                :asset-path "assets/app/js"
+                :modules {:sorting_visualizer
+                          {:init-fn  sorting-visualizer.core/init
+                           :start-fn sorting-visualizer.core/start}}}}}
