@@ -27,8 +27,8 @@
 ;; ==================
 (defn merge [l r]
   (loop [v []
-         i    0
-         j    0]
+         i  0
+         j  0]
     (if (and (< i (count l))
              (< j (count r)))
       (if (< (l i) (r j))
