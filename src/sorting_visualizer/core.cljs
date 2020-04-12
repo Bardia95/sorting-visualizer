@@ -1,11 +1,12 @@
 (ns sorting-visualizer.core
   (:require [reagent.core :as r]
             [reagent.dom :as rdom]
-            [clojure.string :as str]))
+            [clojure.string :as str]
+            [sorting-visualizer.algorithms :refer [get-merge-sort-animations]]))
 
 ;; Constants
 ;; =========
-(def animation-speed-ms 1)
+(def animation-speed-ms 1000)
 (def n-vector-bars 210)
 (def primary-color "turquoise")
 (def secondary-color "red")
@@ -17,68 +18,67 @@
 ;; =====
 (def vect (r/atom (new-vector)))
 
-;; Helpers
+;; State changers
 ;; =======
-(defn reset-vector []
+(defn reset-vector! []
   (let [new-vect (new-vector)]
     (reset! vect new-vect)))
 
-;; Sorting Algorithms
-;; ==================
-(defn merge [l r]
-  (loop [v []
-         i  0
-         j  0]
-    (if (and (< i (count l))
-             (< j (count r)))
-      (if (< (l i) (r j))
-        (recur (conj v (l i))
-               (inc i)
-               j)
-        (recur (conj v (r j))
-               i
-               (inc j)))
-      (if (< i (count l))
-        (recur (conj v (l i))
-               (inc i)
-               j)
-        (if (< j (count r))
-          (recur (conj v (r j))
-                 i
-                 (inc j))
-          v)))))
+(defn change-bg-color! [el color]
+  (set! (.-backgroundColor (.-style el)) color))
 
-(defn merge-sort [v]
-  (if (< (count v) 2)
-    v
-    (let [mid   (quot (count v) 2)
-          split (split-at mid v)
-          left  (vec (merge-sort (first split)))
-          right (vec (merge-sort (peek split)))]
-      (merge left right))))
+(defn change-height! [el n]
+  (set! (.-height (.-style el)) (str n "px")))
+
+;; Animations
+;; =========
+(defn merge-sort! [v]
+  (loop [animations (get-merge-sort-animations v)
+         i 0]
+    (if (< i (count animations))
+      (let [bars (array-seq (.getElementsByClassName js/document "vector-bar"))
+            color (if (= (mod i 3) 0) secondary-color primary-color)]
+        (if (not= 2 (mod i 3))
+          (let [[bar-one-idx bar-two-idx] (animations i)
+                bar-one (bars bar-one-idx)
+                bar-two (bars bar-two-idx)]
+            (js/setTimeout
+             #(do (change-bg-color! bar-one color)
+                  (change-bg-color! bar-two color))
+             (* i animation-speed-ms))
+            (recur animations (inc i)))
+          (let [[bar-one-idx new-height] (animations i)
+                [bar-one] (bars bar-one-idx)]
+            (js/setTimeout
+             #(do (change-bg-color! bar-one color)
+                  (change-height! bar-one new-height))
+             (* i animation-speed-ms))
+            (recur animations (inc i)))))
+      (do (js/console.log "Finished sorting")
+          (println "Finished sorting")))))
 
 ;; Components
 ;; ==========
 (defn vector-bars [v]
-  [:div.vector-container (for [i (range (count v))]
-                           ^{:key i}[:div.vector-bar
-                                     {:style {:background-color "blue"
-                                              :height (str (* (v i)) "px")}}])])
+[:div.vector-container (for [i (range (count v))]
+                         ^{:key i}[:div.vector-bar
+                                   {:style {:background-color "blue"
+                                            :height (str (* (v i)) "px")}}])])
 
 (defn app []
   [:div
    [vector-bars @vect]
    [:input {:type "button" :value "New vector"
-            :on-click #(reset-vector)}]
+            :on-click #(reset-vector!)}]
    [:input {:type "button" :value "Merge sort"
-            :on-click #(swap! vect merge-sort)}]])
+            :on-click #(merge-sort! @vect)}]])
 
 
 ;; Start
 ;; =====
 (defn ^:dev/after-load start []
-  (rdom/render [app] (js/document.getElementById "app")))
+(rdom/render [app] (js/document.getElementById "app")))
 
 (defn init []
-  (js/console.log "init")
-  (start))
+(js/console.log "init")
+(start))
