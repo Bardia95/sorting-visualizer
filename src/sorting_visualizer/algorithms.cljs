@@ -1,6 +1,5 @@
 (ns sorting-visualizer.algorithms)
 
-
 (defn do-merge [v
                 start-idx
                 mid-idx
@@ -14,7 +13,7 @@
          i start-idx
          j (inc mid-idx)]
     (if (and (<= i mid-idx)
-             (<= j mid-idx))
+             (<= j end-idx))
       (let [animations (conj animations [i j] [i j])]
         (if (<= (v1 i) (v1 j))
           (let [animations (conj animations [k (v1 i)])]
